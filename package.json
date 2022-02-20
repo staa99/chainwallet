@@ -8,6 +8,7 @@
     "build": "scripts/build",
     "clean": "rm -rf build/ cache/ dist/",
     "compile": "hardhat compile",
+    "deploy": "hardhat run scripts/deploy.ts",
     "test": "scripts/test",
     "test:gas": "RUN_EVM=true REPORT_GAS=true scripts/test",
     "test:coverage": "scripts/coverage",
