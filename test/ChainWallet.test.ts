@@ -183,7 +183,7 @@ describe('ChainWallet', () => {
     })
   })
 
-  describe('contract interactions', () => {
+  describe('contract interactions and ether transfers', () => {
     let sampleContract: SampleContract
     beforeEach(async () => {
       const [factoryAdmin, user] = signers
@@ -227,6 +227,34 @@ describe('ChainWallet', () => {
 
       const balanceAfterAgent = await sampleContract.balanceOf(owner.address)
       expect(balanceAfterAgent).to.eq(balanceBefore)
+    })
+
+    it('ether transfer triggers as agent', async () => {
+      let tx, rct
+      const [, owner] = signers
+      tx = await contract.createWallet()
+      rct = await tx.wait()
+      const agents = await contract.getAgents()
+
+      const balanceBefore = await provider.getBalance(owner.address)
+      const transferAmount = ethers.utils.parseEther('1')
+      tx = await owner.sendTransaction({ to: agents[0], value: transferAmount })
+      rct = await tx.wait()
+      const balanceAfter = await provider.getBalance(owner.address)
+
+      expect(balanceBefore.sub(balanceAfter)).to.gt(transferAmount)
+
+      const agentBalance = await provider.getBalance(agents[0])
+      expect(agentBalance).to.eq(transferAmount)
+
+      tx = await contract.sendEther(agents[0], owner.address, transferAmount)
+      rct = await tx.wait()
+
+      const newAgentBalance = await provider.getBalance(agents[0])
+      expect(newAgentBalance).to.eq(0)
+
+      const balanceAfterAgent = await provider.getBalance(owner.address)
+      expect(balanceAfterAgent).gt(balanceAfter)
     })
   })
 })

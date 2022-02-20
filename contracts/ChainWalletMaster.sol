@@ -98,6 +98,15 @@ contract ChainWalletMaster is Initializable, PausableUpgradeable, AccessControlU
         return _agents[wallets[msg.sender]][agentAddress].performInteraction(contractAddress, msg.value, data);
     }
 
+    function sendEther(
+        address agentAddress,
+        address recipientAddress,
+        uint256 value
+    ) external payable returns (bytes memory) {
+        _requireAgent(agentAddress);
+        return _agents[wallets[msg.sender]][agentAddress].performInteraction(recipientAddress, value, "");
+    }
+
     function pause() public onlyRole(PAUSER_ROLE) {
         _pause();
     }

@@ -15,12 +15,16 @@ contract ChainWalletAgent {
 
     receive() external payable {}
 
+    modifier onlyMaster() {
+        require(msg.sender == _master, "ACCESS_DENIED");
+        _;
+    }
+
     function performInteraction(
         address contractAddress,
         uint256 value,
         bytes calldata data
-    ) external returns (bytes memory) {
-        require(msg.sender == _master, "ONLY_MASTER_CAN_PERFORM_INTERACTIONS");
+    ) external onlyMaster returns (bytes memory) {
         (bool success, bytes memory response) = contractAddress.call{ value: value }(data);
         require(success, "CONTRACT_INTERACTION_FAILED");
         return response;
