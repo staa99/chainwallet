@@ -10,6 +10,7 @@
     "compile": "hardhat compile",
     "deploy": "hardhat run scripts/deploy.ts",
     "test": "scripts/test",
+    "wallet": "ts-node scripts/cli-wallet/index.ts",
     "test:gas": "RUN_EVM=true REPORT_GAS=true scripts/test",
     "test:coverage": "scripts/coverage",
     "lint": "npm run lint:ts && npm run lint:sol",
