@@ -17,6 +17,7 @@ bin/
 .env
 .DS_Store
 .vscode
+.idea
 
 # Reports
 /reports
