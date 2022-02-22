@@ -91,6 +91,11 @@ contract ChainWalletMaster is Initializable, PausableUpgradeable, AccessControlU
         emit TransactionCreated(transactionId);
     }
 
+    function getAgentNonce(address agentAddress) external view returns (uint256) {
+        _requireAgent(agentAddress);
+        return _agents[wallets[msg.sender]][agentAddress].getNonce();
+    }
+
     function computeInteractHash(ProxyTransactionInput calldata input) public pure returns (bytes32) {
         return
             keccak256(
@@ -256,7 +261,7 @@ contract ChainWalletMaster is Initializable, PausableUpgradeable, AccessControlU
         _requireAgent(input.fromAddress, input.agentAddress);
 
         // The agent balance MUST be sufficient to cover the user's gas cost + value + incentive
-        // reward is calculated as 2 x gas cost (refund plus incentive) 
+        // reward is calculated as 2 x gas cost (refund plus incentive)
         // gas cost is estimated as 36000 + gas used within this context
 
         require(input.agentAddress.balance >= 2 * gasLimit * tx.gasprice + input.value, "INSUFFICIENT_BALANCE");
@@ -266,7 +271,7 @@ contract ChainWalletMaster is Initializable, PausableUpgradeable, AccessControlU
 
         // update transaction status
         proxyTransactions[transactionId].processed = true;
-        
+
         // repay msg.sender with 2 * gas cost
         uint256 gasUsed = gasLimit - gasleft();
         _agents[wallets[input.fromAddress]][input.agentAddress].performInteraction(
