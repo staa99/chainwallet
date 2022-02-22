@@ -255,8 +255,8 @@ contract ChainWalletMaster is Initializable, PausableUpgradeable, AccessControlU
         require(proxyTransactions[transactionId].agentAddress == input.agentAddress, "INVALID_AGENT_ADDRESS");
         _requireAgent(input.fromAddress, input.agentAddress);
 
-        // The agent balance MUST be sufficient to cover the user's gas limit * gas price + value + incentive
-        // incentive is calculated as 2 x gas cost
+        // The agent balance MUST be sufficient to cover the user's gas cost + value + incentive
+        // reward is calculated as 2 x gas cost (refund plus incentive) 
         // gas cost is estimated as 36000 + gas used within this context
 
         require(input.agentAddress.balance >= 2 * gasLimit * tx.gasprice + input.value, "INSUFFICIENT_BALANCE");
@@ -264,8 +264,10 @@ contract ChainWalletMaster is Initializable, PausableUpgradeable, AccessControlU
 
         _;
 
-        // the message didn't revert up till this point
-        // repay msg.sender with 2 * actualGasUsed
+        // update transaction status
+        proxyTransactions[transactionId].processed = true;
+        
+        // repay msg.sender with 2 * gas cost
         uint256 gasUsed = gasLimit - gasleft();
         _agents[wallets[input.fromAddress]][input.agentAddress].performInteraction(
             input.nonce + 1,
