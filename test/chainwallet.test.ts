@@ -6,12 +6,7 @@ import '@nomiclabs/hardhat-waffle'
 import { ChainWalletMaster, ChainWalletMaster__factory, SampleContract, SampleContract__factory } from '../build/types'
 import { Provider } from '@ethersproject/providers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
-import {
-  arrayify,
-  formatBytes32String,
-  formatEther,
-  parseEther,
-} from 'ethers/lib/utils'
+import { arrayify, formatBytes32String, formatEther, parseEther } from 'ethers/lib/utils'
 const { getContractFactory, getSigners } = ethers
 
 describe('ChainWallet', () => {
