@@ -7,9 +7,18 @@ import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "./StakeControllerUpgradeable.sol";
+import "./TreasuryManagerUpgradeable.sol";
 import "./ChainWalletAgent.sol";
 
-contract ChainWalletMaster is Initializable, PausableUpgradeable, AccessControlUpgradeable, UUPSUpgradeable {
+contract ChainWalletMaster is
+    Initializable,
+    PausableUpgradeable,
+    AccessControlUpgradeable,
+    UUPSUpgradeable,
+    StakeControllerUpgradeable,
+    TreasuryManagerUpgradeable
+{
     using ECDSAUpgradeable for bytes32;
 
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
@@ -17,9 +26,9 @@ contract ChainWalletMaster is Initializable, PausableUpgradeable, AccessControlU
     bytes32 public constant SUPPORTED_AGENT_VERSION = keccak256("ChainWalletAgent_v1.0.0");
 
     mapping(address => bytes32) public wallets;
-    mapping(bytes32 => UserProxyTransaction) public proxyTransactions;
-
+    
     mapping(address => bool) private _deleting;
+    mapping(bytes32 => UserProxyTransaction) private _proxyTransactions;
     mapping(bytes32 => mapping(address => ChainWalletAgent)) private _agents;
     mapping(bytes32 => address[]) private _allAgents;
 
@@ -32,7 +41,7 @@ contract ChainWalletMaster is Initializable, PausableUpgradeable, AccessControlU
 
     struct UserProxyTransaction {
         bool processed;
-        address agentAddress;
+        bytes32 addressHash;
         bytes32 id;
         bytes32 key;
     }
@@ -51,17 +60,38 @@ contract ChainWalletMaster is Initializable, PausableUpgradeable, AccessControlU
 
     constructor() payable {}
 
-    function initialize() public initializer {
+    function initialize(
+        address treasuryAddress,
+        uint256 minStakes,
+        uint256 maxStakes,
+        uint16 minPoolShare
+    ) public initializer {
         __Pausable_init();
         __AccessControl_init();
         __UUPSUpgradeable_init();
+        __StakeController_init(minPoolShare, minStakes, maxStakes);
+        __TreasuryManager_init(treasuryAddress);
 
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(PAUSER_ROLE, msg.sender);
         _grantRole(UPGRADER_ROLE, msg.sender);
+        _grantRole(STAKING_MANAGER_ROLE, msg.sender);
+        _grantRole(TREASURY_MANAGER_ROLE, msg.sender);
     }
 
-    function createWallet() external payable returns (bytes32) {
+    function stakeEthers() external payable whenNotPaused {
+        _stakeEthers();
+    }
+
+    function withdrawStakes() external payable whenNotPaused {
+        _withdrawStakes(treasury);
+    }
+
+    function getProxyTransaction(bytes32 id) external view whenNotPaused _requireStakes returns (UserProxyTransaction memory) {
+        return _proxyTransactions[id];
+    }
+
+    function createWallet() external payable whenNotPaused returns (bytes32) {
         require(wallets[msg.sender] == 0, "DUPLICATE_WALLET_INVALID");
 
         // generate a wallet
@@ -73,7 +103,7 @@ contract ChainWalletMaster is Initializable, PausableUpgradeable, AccessControlU
         return walletId;
     }
 
-    function createAgent() external payable {
+    function createAgent() external payable whenNotPaused {
         require(wallets[msg.sender] != 0, "WALLET_NOT_CREATED");
         _createAgent(wallets[msg.sender]);
     }
@@ -82,12 +112,19 @@ contract ChainWalletMaster is Initializable, PausableUpgradeable, AccessControlU
         address agentAddress,
         bytes32 id,
         bytes32 key
-    ) external {
+    ) external whenNotPaused {
         _requireAgent(agentAddress);
         bytes32 transactionId = keccak256(
-            abi.encode(keccak256("proxyTransaction"), agentAddress, id, key, block.difficulty, block.timestamp)
+            abi.encode(
+                keccak256("proxyTransaction"),
+                keccak256(abi.encode(agentAddress)),
+                id,
+                key,
+                block.difficulty,
+                block.timestamp
+            )
         );
-        proxyTransactions[transactionId] = UserProxyTransaction(false, agentAddress, id, key);
+        _proxyTransactions[transactionId] = UserProxyTransaction(false, keccak256(abi.encode(agentAddress)), id, key);
         emit TransactionCreated(transactionId);
     }
 
@@ -135,20 +172,20 @@ contract ChainWalletMaster is Initializable, PausableUpgradeable, AccessControlU
         return _allAgents[wallets[msg.sender]];
     }
 
-    function deleteWallet() external {
+    function deleteWallet() external whenNotPaused {
         require(wallets[msg.sender] != 0, "WALLET_NOT_CREATED");
         if (!_deleting[msg.sender]) {
             _deleting[msg.sender] = true;
         }
     }
 
-    function cancelDelete() external {
+    function cancelDelete() external whenNotPaused {
         if (_deleting[msg.sender]) {
             _deleting[msg.sender] = false;
         }
     }
 
-    function confirmDelete() external {
+    function confirmDelete() external whenNotPaused {
         require(_deleting[msg.sender], "DELETE_NOT_INITIATED");
         emit WalletDeleted(wallets[msg.sender]);
         wallets[msg.sender] = 0;
@@ -158,7 +195,7 @@ contract ChainWalletMaster is Initializable, PausableUpgradeable, AccessControlU
         return _deleting[msg.sender];
     }
 
-    function shareWallet(address recipient) external {
+    function shareWallet(address recipient) external whenNotPaused {
         require(wallets[msg.sender] != 0, "WALLET_NOT_CREATED");
         require(wallets[recipient] == 0, "RECIPIENT_WALLET_EXISTS");
 
@@ -171,7 +208,7 @@ contract ChainWalletMaster is Initializable, PausableUpgradeable, AccessControlU
         address contractAddress,
         uint256 value,
         bytes calldata data
-    ) external payable returns (bytes memory) {
+    ) external payable whenNotPaused returns (bytes memory) {
         _requireAgent(msg.sender, agentAddress);
         return
             _interact(
@@ -187,7 +224,8 @@ contract ChainWalletMaster is Initializable, PausableUpgradeable, AccessControlU
     function interactAsProxy(bytes32 transactionId, ProxyTransactionInput calldata input)
         external
         payable
-        // signature must be for keccak256("interactAsProxy", fromAddress, agentAddress, toAddress, value, nonce, gasLimit, gasPrice, data)
+        whenNotPaused
+        _requireStakes
         _proxyMethod(transactionId, input, computeInteractHash(input))
         returns (bytes memory)
     {
@@ -198,7 +236,7 @@ contract ChainWalletMaster is Initializable, PausableUpgradeable, AccessControlU
         address agentAddress,
         address recipientAddress,
         uint256 value
-    ) external payable returns (bytes memory) {
+    ) external payable whenNotPaused returns (bytes memory) {
         _requireAgent(msg.sender, agentAddress);
         return
             _interact(
@@ -214,7 +252,8 @@ contract ChainWalletMaster is Initializable, PausableUpgradeable, AccessControlU
     function sendEtherAsProxy(bytes32 transactionId, ProxyTransactionInput calldata input)
         external
         payable
-        // signature must be for keccak256("sendEtherAsProxy", fromAddress, agentAddress, recipientAddress, value, nonce, gasLimit, gasPrice)
+        whenNotPaused
+        _requireStakes
         _proxyMethod(transactionId, input, computeSendEthersHash(input))
         returns (bytes memory)
     {
@@ -238,7 +277,7 @@ contract ChainWalletMaster is Initializable, PausableUpgradeable, AccessControlU
         uint256 value,
         uint256 nonce,
         bytes memory data
-    ) private returns (bytes memory) {
+    ) private whenNotPaused returns (bytes memory) {
         // send the ether to the agent if the transaction has msg.value
         if (msg.value > 0) {
             (bool success, ) = agentAddress.call{ value: msg.value }("");
@@ -256,12 +295,15 @@ contract ChainWalletMaster is Initializable, PausableUpgradeable, AccessControlU
         uint256 gasLimit = gasleft() + 36000;
         require(gasLimit - 36000 <= input.gasLimit, "PROXY_GAS_LIMIT_TOO_HIGH");
         require(input.gasPrice <= tx.gasprice, "PROXY_GAS_PRICE_TOO_HIGH");
-        require(!proxyTransactions[transactionId].processed, "TRANSACTION_ALREADY_PROCESSED");
-        require(proxyTransactions[transactionId].agentAddress == input.agentAddress, "INVALID_AGENT_ADDRESS");
+        require(!_proxyTransactions[transactionId].processed, "TRANSACTION_ALREADY_PROCESSED");
+        require(
+            _proxyTransactions[transactionId].addressHash == keccak256(abi.encode(input.agentAddress)),
+            "INVALID_AGENT_ADDRESS"
+        );
         _requireAgent(input.fromAddress, input.agentAddress);
 
         // The agent balance MUST be sufficient to cover the user's gas cost + value + incentive
-        // reward is calculated as 2 x gas cost (refund plus incentive)
+        // reward is calculated as 1.5 x gas cost (refund plus incentive)
         // gas cost is estimated as 36000 + gas used within this context
 
         require(input.agentAddress.balance >= 2 * gasLimit * tx.gasprice + input.value, "INSUFFICIENT_BALANCE");
@@ -270,14 +312,22 @@ contract ChainWalletMaster is Initializable, PausableUpgradeable, AccessControlU
         _;
 
         // update transaction status
-        proxyTransactions[transactionId].processed = true;
+        _proxyTransactions[transactionId].processed = true;
 
-        // repay msg.sender with 2 * gas cost
+        // repay msg.sender with 1.5 * gas cost
         uint256 gasUsed = gasLimit - gasleft();
         _agents[wallets[input.fromAddress]][input.agentAddress].performInteraction(
             input.nonce + 1,
             msg.sender,
-            2 * gasUsed * tx.gasprice,
+            (3 * gasUsed * tx.gasprice) / 2,
+            ""
+        );
+
+        // commit 0.5 * gas cost to treasury
+        _agents[wallets[input.fromAddress]][input.agentAddress].performInteraction(
+            input.nonce + 2,
+            treasury,
+            (gasUsed * tx.gasprice) / 2,
             ""
         );
     }
@@ -293,7 +343,7 @@ contract ChainWalletMaster is Initializable, PausableUpgradeable, AccessControlU
         );
     }
 
-    function _createAgent(bytes32 walletId) private {
+    function _createAgent(bytes32 walletId) private whenNotPaused {
         // deploy the first agent
         ChainWalletAgent agent = new ChainWalletAgent{ value: msg.value }();
         address agentAddress = address(agent);
