@@ -13,10 +13,12 @@ describe('ChainWallet', () => {
   let contract: ChainWalletMaster
   let provider: Provider
   let signers: SignerWithAddress[]
+  let treasury: SignerWithAddress
 
   beforeEach(async () => {
     signers = await getSigners()
     const [factoryAdmin, user] = signers
+    treasury = signers[5]
 
     const chainWalletMasterFactory = (await getContractFactory(
       'ChainWalletMaster',
@@ -24,6 +26,7 @@ describe('ChainWallet', () => {
     )) as ChainWalletMaster__factory
     contract = await chainWalletMasterFactory.deploy()
     await contract.deployed()
+    await contract.initialize(treasury.address, parseEther('1'), parseEther('5'), 100)
     contract = contract.connect(user)
     provider = contract.provider
   })
@@ -288,19 +291,14 @@ describe('ChainWallet', () => {
 
         // verify that transaction id exists
         expect(transactionId).not.null
-
-        // verify that stored transaction matches parameters
-        const transaction = await contract.proxyTransactions(transactionId)
-        expect(transaction).not.null
-        expect(transaction.agentAddress).to.eq(agents[0])
-        expect(transaction.id).to.eq(formatBytes32String('sampleId'))
-        expect(transaction.key).to.eq(formatBytes32String('sampleKey'))
       })
 
       it('proxy agent contract interaction transaction execution succeeds', async () => {
         let tx, rct
         const [, user, proxy] = signers
         const agents = await contract.getAgents()
+
+        await contract.connect(proxy).stakeEthers({value: parseEther('2')})
 
         // fund agent for gas payment
         tx = await user.sendTransaction({ to: agents[0], value: parseEther('1') })
@@ -321,7 +319,7 @@ describe('ChainWallet', () => {
           toAddress: sampleContract.address,
           value: 0,
           nonce: 0,
-          gasLimit: 120000,
+          gasLimit: 200000,
           gasPrice: await contract.provider.getGasPrice(),
           data: transferTx.data,
           signature: '0x', // unset
@@ -367,10 +365,11 @@ describe('ChainWallet', () => {
         let tx, rct
         const [, user, proxy] = signers
         const agents = await contract.getAgents()
+        
+        await contract.connect(proxy).stakeEthers({value: parseEther('2')})
 
         // fund agent for transfer plus gas payment
-        tx = await user.sendTransaction({ to: agents[0], value: parseEther('1.01') })
-        await tx.wait()
+        await user.sendTransaction({ to: agents[0], value: parseEther('1.01') })
 
         // create transaction to be executed by proxy
         const transaction = {
@@ -379,7 +378,7 @@ describe('ChainWallet', () => {
           toAddress: user.address,
           value: parseEther('1'),
           nonce: 0,
-          gasLimit: 120000,
+          gasLimit: 150000,
           gasPrice: await contract.provider.getGasPrice(),
           data: '0x', // not used
           signature: '0x', // unset
