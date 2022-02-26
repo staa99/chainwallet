@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 
 contract ChainWalletAgent {
     bytes32 public VERSION_CODE;
+    uint256 private _nonce;
     address private _master;
 
     constructor() payable {
@@ -20,13 +21,20 @@ contract ChainWalletAgent {
         _;
     }
 
+    function getNonce() external view onlyMaster returns (uint256) {
+        return _nonce;
+    }
+
     function performInteraction(
-        address contractAddress,
+        uint256 nonce,
+        address toAddress,
         uint256 value,
         bytes calldata data
     ) external onlyMaster returns (bytes memory) {
-        (bool success, bytes memory response) = contractAddress.call{ value: value }(data);
-        require(success, "CONTRACT_INTERACTION_FAILED");
+        require(nonce == _nonce, "INVALID_NONCE");
+        _nonce++;
+        (bool success, bytes memory response) = toAddress.call{ value: value }(data);
+        require(success, "CALL_FAILED");
         return response;
     }
 }
