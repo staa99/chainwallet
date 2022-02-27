@@ -294,7 +294,7 @@ contract ChainWalletMaster is
     ) {
         uint256 gasLimit = gasleft() + 36000;
         require(gasLimit - 36000 <= input.gasLimit, "PROXY_GAS_LIMIT_TOO_HIGH");
-        require(input.gasPrice <= tx.gasprice, "PROXY_GAS_PRICE_TOO_HIGH");
+        require(input.gasPrice == tx.gasprice, "WRONG_PROXY_GAS_PRICE");
         require(!_proxyTransactions[transactionId].processed, "TRANSACTION_ALREADY_PROCESSED");
         require(
             _proxyTransactions[transactionId].addressHash == keccak256(abi.encode(input.agentAddress)),
