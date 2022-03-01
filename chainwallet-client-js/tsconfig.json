@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "es2018",
+    "module": "commonjs",
+    "strict": true,
+    "esModuleInterop": true,
+    "outDir": "dist",
+    "declaration": true,
+    "resolveJsonModule": true,
+    "baseUrl": "./src"
+  },
+  "lib": ["es2018"],
+  "ts-node": {
+    "require": ["tsconfig-paths/register"]
+  }
+}

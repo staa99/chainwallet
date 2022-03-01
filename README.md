@@ -14,7 +14,3 @@ to trace transactions directly to the EOA.
 - Share wallets between EOAs
 - Interact with smart contracts from managed accounts
 - Send and Receive Ether from managed accounts
-
-
-## Credit
-abarmat: [solidity-starter](https://github.com/abarmat/solidity-starter)
