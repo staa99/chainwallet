@@ -2,10 +2,11 @@
 
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-abstract contract StakeControllerUpgradeable is Initializable, ContextUpgradeable {
+abstract contract StakeControllerUpgradeable is Initializable, ContextUpgradeable, AccessControlUpgradeable {
     bytes32 public constant STAKING_MANAGER_ROLE = keccak256("STAKING_MANAGER_ROLE");
 
     /**
@@ -13,7 +14,7 @@ abstract contract StakeControllerUpgradeable is Initializable, ContextUpgradeabl
      * Scaled to 1 decimal precision.
      *
      * 1 = 0.1%, 10 = 1%, 100 = 10%, 1000 = 100%.
-     * 
+     *
      * `minPoolSharePercentage` must never be higher than 10%
      */
     uint16 public minPoolSharePercentage;
@@ -54,13 +55,33 @@ abstract contract StakeControllerUpgradeable is Initializable, ContextUpgradeabl
     event MaxStakeAmountChanged(uint256 newAmount);
 
     /**
+     * @dev Emitted when new stakes are added by staker
+     */
+    event StakesAdded(address indexed staker, uint256 totalStakes);
+
+    /**
+     * @dev Emitted when staker withdraws their stakes
+     */
+    event StakesWithdrawn(address staker);
+
+    /**
      * @dev Initializes the contract.
      */
-    function __StakeController_init(uint16 minPoolShare, uint256 minStakes, uint256 maxStakes) internal onlyInitializing {
+    function __StakeController_init(
+        uint16 minPoolShare,
+        uint256 minStakes,
+        uint256 maxStakes
+    ) internal onlyInitializing {
+        __AccessControl_init();
+
         __StakeController_init_unchained(minPoolShare, minStakes, maxStakes);
     }
 
-    function __StakeController_init_unchained(uint16 minPoolShare, uint256 minStakes, uint256 maxStakes) internal onlyInitializing {
+    function __StakeController_init_unchained(
+        uint16 minPoolShare,
+        uint256 minStakes,
+        uint256 maxStakes
+    ) internal onlyInitializing {
         require(minPoolShare <= 100, "MIN_POOL_SHARE_TOO_HIGH");
         minStakeAmount = minStakes;
         maxStakeAmount = maxStakes;
@@ -75,8 +96,10 @@ abstract contract StakeControllerUpgradeable is Initializable, ContextUpgradeabl
         require(msg.value + stakes[msg.sender] >= minStakeAmount, "STAKE_TOO_LOW");
         require(msg.value + stakes[msg.sender] <= maxStakeAmount, "STAKE_TOO_HIGH");
 
-        stakes[msg.sender] = msg.value;
+        stakes[msg.sender] += msg.value;
         totalStakes += msg.value;
+
+        emit StakesAdded(msg.sender, stakes[msg.sender] + msg.value);
     }
 
     /**
@@ -95,9 +118,8 @@ abstract contract StakeControllerUpgradeable is Initializable, ContextUpgradeabl
         stakes[msg.sender] = 0;
         totalStakes -= amount;
 
-        bool success;
         // transfer 50% to owner
-        (success, ) = msg.sender.call{ value: amount / 2 }("");
+        (bool success, ) = msg.sender.call{ value: amount / 2 }("");
         require(success, "WITHDRAWAL_FAILED");
 
         // transfer 50% to treasury
@@ -109,7 +131,7 @@ abstract contract StakeControllerUpgradeable is Initializable, ContextUpgradeabl
      * @dev Sets the minimum amount required to be a valid proxy.
      * Emits `MinStakeAmountChanged(amount)` on success.
      */
-    function _setMinStakeAmount(uint256 amount) internal {
+    function setMinStakeAmount(uint256 amount) external onlyRole(STAKING_MANAGER_ROLE) {
         minStakeAmount = amount;
         emit MinStakeAmountChanged(amount);
     }
@@ -118,7 +140,8 @@ abstract contract StakeControllerUpgradeable is Initializable, ContextUpgradeabl
      * @dev Sets the maximum amount required to be a valid proxy.
      * Emits `MaxStakeAmountChanged(amount)` on success.
      */
-    function _setMaxStakeAmount(uint256 amount) internal {
+    function setMaxStakeAmount(uint256 amount) external onlyRole(STAKING_MANAGER_ROLE) {
+        require(amount > minStakeAmount);
         maxStakeAmount = amount;
         emit MaxStakeAmountChanged(amount);
     }
