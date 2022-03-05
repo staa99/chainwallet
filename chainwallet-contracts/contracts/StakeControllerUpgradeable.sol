@@ -117,6 +117,8 @@ abstract contract StakeControllerUpgradeable is Initializable, ContextUpgradeabl
         uint256 amount = stakes[msg.sender];
         stakes[msg.sender] = 0;
         totalStakes -= amount;
+        blockList[msg.sender] = true;
+        emit StakesWithdrawn(msg.sender);
 
         // transfer 50% to owner
         (bool success, ) = msg.sender.call{ value: amount / 2 }("");
