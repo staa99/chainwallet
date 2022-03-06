@@ -30,6 +30,7 @@ const networkConfigs: NetworkConfig[] = [
   { network: 'ropsten', chainId: 3 },
   { network: 'rinkeby', chainId: 4 },
   { network: 'kovan', chainId: 42 },
+  { network: 'polygon-mainnet', chainId: 137 },
 ]
 
 function getAccountMnemonic() {
