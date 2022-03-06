@@ -2,7 +2,6 @@
 
 pragma solidity ^0.8.0;
 
-// This is the main building block for smart contracts.
 contract SampleContract {
     string public name = "Sample Basic Token";
     string public symbol = "SBT";

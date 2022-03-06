@@ -14,7 +14,7 @@ abstract contract WalletManagerUpgradeable is Initializable, ContextUpgradeable 
     /**
      * @dev Mapping of wallet owners to wallet IDs
      */
-    mapping(address => bytes32) public wallets;
+    mapping(address => bytes32) internal wallets;
 
     /**
      * @dev Mapping of wallet ids to agents
@@ -212,6 +212,8 @@ abstract contract WalletManagerUpgradeable is Initializable, ContextUpgradeable 
         wallets[recipient] = wallets[msg.sender];
         emit WalletShared(msg.sender, recipient, wallets[msg.sender]);
     }
+
+    // INTERNAL READ-ONLY FUNCTIONS
 
     /**
      * @dev Validates that `agentAddress` is a managed agent belonging to `msg.sender`.

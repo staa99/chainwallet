@@ -73,7 +73,7 @@ contract ChainWalletMaster is
         address contractAddress,
         uint256 value,
         bytes calldata data
-    ) external payable whenNotPaused {
+    ) external whenNotPaused {
         _interact(agentAddress, contractAddress, value, data);
     }
 
@@ -81,7 +81,7 @@ contract ChainWalletMaster is
         address agentAddress,
         address recipientAddress,
         uint256 value
-    ) external payable whenNotPaused {
+    ) external whenNotPaused {
         _sendEther(agentAddress, recipientAddress, value);
     }
 
