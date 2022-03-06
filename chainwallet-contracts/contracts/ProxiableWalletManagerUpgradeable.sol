@@ -153,21 +153,23 @@ abstract contract ProxiableWalletManagerUpgradeable is
      * half of the gas cost as incentive to the proxy. It also pays half of the gas cost for maintenance of the system
      */
     modifier _proxyMethod(ProxyTransactionInput calldata input, bytes32 hash) {
-        uint256 gasLimit = gasleft() + 36000;
+        uint256 gasLimit = gasleft() + 67584;
         _requireAgent(input.fromAddress, input.agentAddress);
-        require(gasLimit - 36000 <= input.gasLimit, "PROXY_GAS_LIMIT_TOO_HIGH");
+        require(gasLimit - 67584 <= input.gasLimit, "PROXY_GAS_LIMIT_TOO_HIGH");
         require(input.gasPrice == tx.gasprice, "WRONG_PROXY_GAS_PRICE");
         require(input.agentAddress.balance >= 2 * gasLimit * tx.gasprice + input.value, "INSUFFICIENT_BALANCE");
-        require(hash.toEthSignedMessageHash().recover(input.signature) == input.fromAddress, "INVALID_SIGNED_DATA");
+        require(hash.toEthSignedMessageHash().recover(input.signature) == input.fromAddress, "INVALID_SIGNATURE");
 
         _;
 
+        emit TransactionCompleted(hash);
+
         // repay msg.sender with 1.5 * gas cost
-        uint256 gasUsed = gasLimit - gasleft();
+        uint256 gasCost = (gasLimit - gasleft()) * tx.gasprice;
         _agents[wallets[input.fromAddress]][input.agentAddress].performInteraction(
             input.nonce + 1,
             msg.sender,
-            (3 * gasUsed * tx.gasprice) / 2,
+            (3 * gasCost) / 2,
             ""
         );
 
@@ -175,7 +177,7 @@ abstract contract ProxiableWalletManagerUpgradeable is
         _agents[wallets[input.fromAddress]][input.agentAddress].performInteraction(
             input.nonce + 2,
             treasury,
-            (gasUsed * tx.gasprice) / 2,
+            gasCost / 2,
             ""
         );
     }
