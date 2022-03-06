@@ -41,15 +41,15 @@ describe('Treasury Management', () => {
   describe('setTreasuryAddress', () => {
     describe('validations', () => {
       it('should revert on unauthorized users', async () => {
-        await expect(contract.setTreasuryAddress(newTreasuryAddress)).to.reverted
+        await expect(contract.setTreasuryAddress(newTreasuryAddress)).to.be.reverted
       })
 
       it('should not revert for admin', async () => {
-        await expect(contract.connect(admin).setTreasuryAddress(newTreasuryAddress)).to.not.reverted
+        await expect(contract.connect(admin).setTreasuryAddress(newTreasuryAddress)).to.not.be.reverted
       })
 
       it('should not revert for user with role', async () => {
-        await expect(contract.connect(treasuryManager).setTreasuryAddress(newTreasuryAddress)).to.not.reverted
+        await expect(contract.connect(treasuryManager).setTreasuryAddress(newTreasuryAddress)).to.not.be.reverted
       })
     })
 

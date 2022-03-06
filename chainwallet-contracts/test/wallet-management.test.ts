@@ -37,7 +37,7 @@ describe('Wallet Management', () => {
     describe('validations', () => {
       it('should revert when paused', async () => {
         await contract.connect(admin).pause()
-        await expect(contract.createWallet()).to.be.reverted
+        await expect(contract.createWallet()).to.be.revertedWith('Pausable: paused')
       })
       it('should revert when user has a wallet', async () => {
         await contract.createWallet()
@@ -71,7 +71,7 @@ describe('Wallet Management', () => {
       it('should revert when paused', async () => {
         await contract.createWallet()
         await contract.connect(admin).pause()
-        await expect(contract.createAgent()).to.be.reverted
+        await expect(contract.createAgent()).to.be.revertedWith('Pausable: paused')
       })
       it('should revert when user does not have a wallet', async () => {
         await expect(contract.createAgent()).to.be.revertedWith('WALLET_NOT_CREATED')
@@ -108,7 +108,7 @@ describe('Wallet Management', () => {
       it('should revert when paused', async () => {
         await contract.createWallet()
         await contract.connect(admin).pause()
-        await expect(contract.shareWallet(otherWallet.address)).to.be.reverted
+        await expect(contract.shareWallet(otherWallet.address)).to.be.revertedWith('Pausable: paused')
       })
       it('should revert when user does not have a wallet', async () => {
         await expect(contract.shareWallet(otherWallet.address)).to.be.revertedWith('WALLET_NOT_CREATED')
@@ -138,10 +138,10 @@ describe('Wallet Management', () => {
       it('should revert when paused', async () => {
         await contract.createWallet()
         await contract.connect(admin).pause()
-        await expect(contract.deleteWallet()).to.be.reverted
+        await expect(contract.deleteWallet()).to.be.revertedWith('Pausable: paused')
       })
       it('should revert when user does not have a wallet', async () => {
-        await expect(contract.deleteWallet()).to.be.reverted
+        await expect(contract.deleteWallet()).to.be.revertedWith('WALLET_NOT_CREATED')
       })
     })
 
@@ -161,7 +161,7 @@ describe('Wallet Management', () => {
         await contract.createWallet()
         await contract.deleteWallet()
         await contract.connect(admin).pause()
-        await expect(contract.cancelDelete()).to.be.reverted
+        await expect(contract.cancelDelete()).to.be.revertedWith('Pausable: paused')
       })
     })
 
@@ -182,7 +182,7 @@ describe('Wallet Management', () => {
         await contract.createWallet()
         await contract.deleteWallet()
         await contract.connect(admin).pause()
-        await expect(contract.confirmDelete()).to.be.reverted
+        await expect(contract.confirmDelete()).to.be.revertedWith('Pausable: paused')
       })
       it('should revert when delete not initiated', async () => {
         await contract.createWallet()

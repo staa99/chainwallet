@@ -97,7 +97,7 @@ describe('Staking', () => {
       describe('validations', () => {
         it('should revert when paused', async () => {
           await contract.connect(admin).pause()
-          await expect(contract.stakeEthers({ value: parseEther('3') })).to.be.reverted
+          await expect(contract.stakeEthers({ value: parseEther('3') })).to.be.revertedWith('Pausable: paused')
         })
         it('should revert when new additional stake is less than min stake', async () => {
           await expect(contract.stakeEthers({ value: parseEther('0.5') })).to.be.revertedWith('STAKE_TOO_LOW')
@@ -135,7 +135,7 @@ describe('Staking', () => {
         it('should revert when paused', async () => {
           await contract.stakeEthers({ value: parseEther('3') })
           await contract.connect(admin).pause()
-          await expect(contract.withdrawStakes()).to.be.reverted
+          await expect(contract.withdrawStakes()).to.be.revertedWith('Pausable: paused')
         })
         it('should revert when total stakes = 0', async () => {
           await expect(contract.withdrawStakes()).to.be.revertedWith('STAKE_TOO_LOW')
