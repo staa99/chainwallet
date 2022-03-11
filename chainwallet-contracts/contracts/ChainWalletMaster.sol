@@ -87,7 +87,7 @@ contract ChainWalletMaster is
 
     // PROXIED EXECUTION
 
-    function initiateProxyTransaction(bytes32 locator) external whenNotPaused {
+    function initiateProxyTransaction(bytes calldata locator) external whenNotPaused {
         _initiateProxyTransaction(locator);
     }
 
