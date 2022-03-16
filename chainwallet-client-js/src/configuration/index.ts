@@ -19,14 +19,14 @@ const chainWalletClientConfigDefaults = {
 }
 
 export function deriveFinalConfig(
-  config: ChainWalletClientConfig
+  config?: ChainWalletClientConfig
 ): ChainWalletClientConfig {
   return {
     contractAddress:
-      config.contractAddress || chainWalletClientConfigDefaults.getContractAddress(),
-    provider: config.provider || chainWalletClientConfigDefaults.getProvider(),
+      config?.contractAddress || chainWalletClientConfigDefaults.getContractAddress(),
+    provider: config?.provider || chainWalletClientConfigDefaults.getProvider(),
     networkClientInterface:
-      config.networkClientInterface ||
+      config?.networkClientInterface ||
       chainWalletClientConfigDefaults.getNetworkClientInterface(),
   }
 }

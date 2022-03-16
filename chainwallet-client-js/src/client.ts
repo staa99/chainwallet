@@ -21,7 +21,7 @@ export class ChainWalletClient {
   private readonly eventEmitter: EventEmitter
   private onTransactionEmittedListener?: (hash: string, log: any) => void
 
-  constructor(config: ChainWalletClientConfig) {
+  constructor(config?: ChainWalletClientConfig) {
     this.config = deriveFinalConfig(config)
     this.eventEmitter = new EventEmitter()
   }
