@@ -1,33 +1,18 @@
-# DNGN Minter Microservice
+# ChainWallet Proxy Service
 
-This microservice has a very simple purpose.
-It listens for messages on a message queue and mints tokens according the the message instruction.
+An implementation of a proxy node on the public network. It is meant to be used primarily
+as a guide for use in private networks. However, users on the public network can also 
+use public proxies to execute transactions.
 
-Messages are encrypted with RSA.
-The private key is stored in an environment variable on the minter environment.
+## Configuration
 
-On decryption, messages are UTF-8 encoded JSON strings with the following format:
+The following environment variables are required
 
-```json
-{
-  "offChainTransactionId": "transaction id from deposit provider",
-  "to": "depositor's address",
-  "amount": "total amount from depositor (integer kobo)",
-  "fees": "computed platform fees (integer kobo)"
-}
 ```
-
-The private key for the minter and the contract address of the DNGN
-contract are stored as environment variables on the minter environment.
-
-The minter interacts with the contract and calls the `deposit` method with the data above.
-If the transaction succeeds, the message is acknowledged successfully.
-
-If it fails because the minter has insufficient balance for gas, the status is logged 
-and the minter delays until the balance is restored. A notification is sent (just stubbed in the PoC)
-via email to alert the provider of the status.
-
-If it fails because of an invalid message, it is rejected and dropped.
-
-If it fails because of a different issue, the error is logged and a notification is sent.
-Then the minter rejects the message and re-queues it.
+BLOCKCHAIN_RPC_ENDPOINT: The full URL of the JSON_RPC endpoint of the node on the network
+PRIVATE_KEY: The private key of the proxy
+CONTRACT_ADDRESS: The address of the chainwallet contract
+IPFS_GATEWAY_BASE_URL: The URL of the IPFS gateway endpoint
+REDIS_URL: A redis connection string to track block numbers
+START_BLOCK_NUMBER: The block number to start indexing from
+```
