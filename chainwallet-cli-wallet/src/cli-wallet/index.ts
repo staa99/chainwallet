@@ -43,13 +43,11 @@ export class ChainWalletCLI {
     return this.signer!.privateKey
   }
 
-  async connectWallet(rpcEndpoint: string, contractAddress: string): Promise<void> {
+  async connectWallet(rpcEndpoint: string): Promise<void> {
     this.assertSigner()
+    this.client = new ChainWalletClient()
     const provider = new ethers.providers.JsonRpcProvider(rpcEndpoint)
     this.signer = this.signer!.connect(provider)
-    this.client = new ChainWalletClient({
-      masterContractAddress: contractAddress,
-    })
     await this.client.connect(this.signer)
     await this.loadSubwallets()
     if (this.subwallets.length) {

@@ -980,10 +980,10 @@ cborg@^1.5.4, cborg@^1.6.0:
   resolved "https://registry.yarnpkg.com/cborg/-/cborg-1.8.1.tgz#c54334f70f411783b9f67feb5ec81ecb600be797"
   integrity sha512-x49Vf1DUrS9rc+ar8QwOqfvA48H9YRn6UzcvlXpd1jKIzq2ebSR1R/yegu7MsskJew4+yc+3znWmud0PMJkR1Q==
 
-chainwallet-client@^0.0.24:
-  version "0.0.24"
-  resolved "https://registry.yarnpkg.com/chainwallet-client/-/chainwallet-client-0.0.24.tgz#fc0ad2cdc330109ac9597fd9ae4f03fae8b1a3c7"
-  integrity sha512-SqZuDQNjjgXw+UPhHAQmi2Irsa/qAHX6dfWjw/O4AQb7VBAT9DP5+swFM7bDeD1phR2CCvjb73J7TMxWIzrJAA==
+chainwallet-client@^0.1.1:
+  version "0.1.1"
+  resolved "https://registry.yarnpkg.com/chainwallet-client/-/chainwallet-client-0.1.1.tgz#6de771fd29bbc5bc236c1f9451923ec0944e4dbb"
+  integrity sha512-3wvZv2e+ZDfRD5gVBzYCCpyDkHGn+4LTcRmGQi6bBsQ5dJnfJ7+xlJqwr49ykMXgk3PFFof6ModgqS84RqmyRQ==
   dependencies:
     "@types/node" "^16.11.7"
     dotenv "^10.0.0"

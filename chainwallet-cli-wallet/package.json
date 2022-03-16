@@ -33,6 +33,6 @@
     "ts-node": "^10.4.0",
     "tsconfig-paths": "^3.12.0",
     "typescript": "^4.5.4",
-    "chainwallet-client": "^0.0.24"
+    "chainwallet-client": "^0.1.1"
   }
 }

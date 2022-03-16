@@ -35,10 +35,9 @@ async function initWallet(wallet: ChainWalletCLI): Promise<void> {
 async function main() {
   const chainWallet = new ChainWalletCLI()
   const rpcEndpoint = await promptConfig('rpcEndpoint')
-  const contractAddress = await promptConfig('contractAddress')
 
   await initWallet(chainWallet)
-  await chainWallet.connectWallet(rpcEndpoint, contractAddress)
+  await chainWallet.connectWallet(rpcEndpoint)
 
   const menu = new Menu({
     title: 'Chain Wallet',
