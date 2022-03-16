@@ -62,7 +62,7 @@ describe('Direct Wallet Interactions', () => {
         const tx = await token.populateTransaction.transfer(otherWallet.address, parseEther('1'))
 
         await expect(contract.interact(randomAddress().toString(), token.address, 0, tx.data)).to.be.revertedWith(
-          'function call to a non-contract account',
+          'AGENT_NOT_FOUND',
         )
       })
       it('should revert when address is of an agent but not owned by user', async () => {
@@ -72,9 +72,7 @@ describe('Direct Wallet Interactions', () => {
         const otherAgents = await contract.connect(otherWallet).getAgents()
         const tx = await token.populateTransaction.transfer(otherWallet.address, parseEther('1'))
 
-        await expect(contract.interact(otherAgents[0], token.address, 0, tx.data)).to.be.revertedWith(
-          'function call to a non-contract account',
-        )
+        await expect(contract.interact(otherAgents[0], token.address, 0, tx.data)).to.be.revertedWith('AGENT_NOT_FOUND')
       })
       it('should revert when value is greater than agent balance', async () => {
         await contract.createWallet()
@@ -125,7 +123,7 @@ describe('Direct Wallet Interactions', () => {
 
         await user.sendTransaction({ to: address, value: parseEther('1') })
         await expect(contract.sendEther(address, otherWallet.address, parseEther('1'))).to.be.revertedWith(
-          'function call to a non-contract account',
+          'AGENT_NOT_FOUND',
         )
       })
       it('should revert when address is of an agent but not owned by user', async () => {
@@ -136,7 +134,7 @@ describe('Direct Wallet Interactions', () => {
         await user.sendTransaction({ to: otherAgents[0], value: parseEther('1') })
 
         await expect(contract.sendEther(otherAgents[0], otherWallet.address, parseEther('1'))).to.be.revertedWith(
-          'function call to a non-contract account',
+          'AGENT_NOT_FOUND',
         )
       })
       it('should revert when value is greater than agent balance', async () => {
