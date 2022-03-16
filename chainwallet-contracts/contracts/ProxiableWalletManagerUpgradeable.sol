@@ -33,7 +33,6 @@ abstract contract ProxiableWalletManagerUpgradeable is
     event TransactionCompleted(bytes32 indexed transactionHash);
 
     struct ProxyTransactionInput {
-        address fromAddress;
         address agentAddress;
         address toAddress;
         uint256 value;
@@ -79,7 +78,6 @@ abstract contract ProxiableWalletManagerUpgradeable is
                 abi.encode(
                     keccak256("interactAsProxy"),
                     instanceId,
-                    input.fromAddress,
                     input.agentAddress,
                     input.toAddress,
                     input.value,
@@ -101,7 +99,6 @@ abstract contract ProxiableWalletManagerUpgradeable is
                 abi.encode(
                     keccak256("sendEtherAsProxy"),
                     instanceId,
-                    input.fromAddress,
                     input.agentAddress,
                     input.toAddress,
                     input.value,
@@ -132,7 +129,7 @@ abstract contract ProxiableWalletManagerUpgradeable is
         _proxyMethod(input, computeInteractHash(input))
         returns (bytes memory)
     {
-        return _interact(input.fromAddress, input.agentAddress, input.toAddress, input.value, input.nonce, input.data);
+        return _interact(input.agentAddress, input.toAddress, input.value, input.nonce, input.data);
     }
 
     /**
@@ -144,7 +141,7 @@ abstract contract ProxiableWalletManagerUpgradeable is
         _proxyMethod(input, computeSendEthersHash(input))
         returns (bytes memory)
     {
-        return _interact(input.fromAddress, input.agentAddress, input.toAddress, input.value, input.nonce, "");
+        return _interact(input.agentAddress, input.toAddress, input.value, input.nonce, "");
     }
 
     // MODIFIERS
@@ -154,11 +151,10 @@ abstract contract ProxiableWalletManagerUpgradeable is
      */
     modifier _proxyMethod(ProxyTransactionInput calldata input, bytes32 hash) {
         uint256 gasLimit = gasleft() + 67584;
-        _requireAgent(input.fromAddress, input.agentAddress);
+        _requireAgent(hash.toEthSignedMessageHash().recover(input.signature), input.agentAddress);
         require(gasLimit - 67584 <= input.gasLimit, "PROXY_GAS_LIMIT_TOO_HIGH");
         require(input.gasPrice == tx.gasprice, "WRONG_PROXY_GAS_PRICE");
         require(input.agentAddress.balance >= 2 * gasLimit * tx.gasprice + input.value, "INSUFFICIENT_BALANCE");
-        require(hash.toEthSignedMessageHash().recover(input.signature) == input.fromAddress, "INVALID_SIGNATURE");
 
         _;
 
@@ -166,7 +162,7 @@ abstract contract ProxiableWalletManagerUpgradeable is
 
         // repay msg.sender with 1.5 * gas cost
         uint256 gasCost = (gasLimit - gasleft()) * tx.gasprice;
-        _agents[wallets[input.fromAddress]][input.agentAddress].performInteraction(
+        ChainWalletAgent(payable(input.agentAddress)).performInteraction(
             input.nonce + 1,
             msg.sender,
             (3 * gasCost) / 2,
@@ -174,12 +170,7 @@ abstract contract ProxiableWalletManagerUpgradeable is
         );
 
         // commit 0.5 * gas cost to treasury
-        _agents[wallets[input.fromAddress]][input.agentAddress].performInteraction(
-            input.nonce + 2,
-            treasury,
-            gasCost / 2,
-            ""
-        );
+        ChainWalletAgent(payable(input.agentAddress)).performInteraction(input.nonce + 2, treasury, gasCost / 2, "");
     }
 
     /**

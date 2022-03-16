@@ -19,7 +19,7 @@ abstract contract WalletManagerUpgradeable is Initializable, ContextUpgradeable 
     /**
      * @dev Mapping of wallet ids to agents
      */
-    mapping(bytes32 => mapping(address => ChainWalletAgent)) internal _agents;
+    mapping(bytes32 => mapping(address => bool)) internal _agents;
 
     /**
      * @dev Mapping of wallet ids to agents list
@@ -79,7 +79,7 @@ abstract contract WalletManagerUpgradeable is Initializable, ContextUpgradeable 
      */
     function getAgentNonce(address agentAddress) external view returns (uint256) {
         _requireAgent(agentAddress);
-        return _agents[wallets[msg.sender]][agentAddress].getNonce();
+        return ChainWalletAgent(payable(agentAddress)).getNonce();
     }
 
     /**
@@ -155,14 +155,7 @@ abstract contract WalletManagerUpgradeable is Initializable, ContextUpgradeable 
     ) internal returns (bytes memory) {
         _requireAgent(msg.sender, agentAddress);
         return
-            _interact(
-                msg.sender,
-                agentAddress,
-                contractAddress,
-                value,
-                _agents[wallets[msg.sender]][agentAddress].getNonce(),
-                data
-            );
+            _interact(agentAddress, contractAddress, value, ChainWalletAgent(payable(agentAddress)).getNonce(), data);
     }
 
     /**
@@ -175,15 +168,7 @@ abstract contract WalletManagerUpgradeable is Initializable, ContextUpgradeable 
         uint256 value
     ) internal returns (bytes memory) {
         _requireAgent(msg.sender, agentAddress);
-        return
-            _interact(
-                msg.sender,
-                agentAddress,
-                recipientAddress,
-                value,
-                _agents[wallets[msg.sender]][agentAddress].getNonce(),
-                ""
-            );
+        return _interact(agentAddress, recipientAddress, value, ChainWalletAgent(payable(agentAddress)).getNonce(), "");
     }
 
     /**
@@ -191,14 +176,13 @@ abstract contract WalletManagerUpgradeable is Initializable, ContextUpgradeable 
      * `agentAddress` must be the address of an agent managed by sender's wallet.
      */
     function _interact(
-        address msgSender,
         address agentAddress,
         address contractAddress,
         uint256 value,
         uint256 nonce,
         bytes memory data
     ) internal returns (bytes memory) {
-        return _agents[wallets[msgSender]][agentAddress].performInteraction(nonce, contractAddress, value, data);
+        return ChainWalletAgent(payable(agentAddress)).performInteraction(nonce, contractAddress, value, data);
     }
 
     /**
@@ -226,10 +210,7 @@ abstract contract WalletManagerUpgradeable is Initializable, ContextUpgradeable 
      * @dev Validates that `agentAddress` is a managed agent belonging to `msgSender`.
      */
     function _requireAgent(address msgSender, address agentAddress) internal view {
-        require(
-            _agents[wallets[msgSender]][agentAddress].VERSION_CODE() == SUPPORTED_AGENT_VERSION,
-            "UNSUPPORTED_AGENT_VERSION"
-        );
+        require(_agents[wallets[msgSender]][agentAddress], "AGENT_NOT_FOUND");
     }
 
     // PRIVATE FUNCTIONS
@@ -242,7 +223,7 @@ abstract contract WalletManagerUpgradeable is Initializable, ContextUpgradeable 
         // deploy the first agent
         ChainWalletAgent agent = new ChainWalletAgent{ value: msg.value }();
         address agentAddress = address(agent);
-        _agents[walletId][agentAddress] = agent;
+        _agents[walletId][agentAddress] = true;
         _allAgents[walletId].push(agentAddress);
         emit AgentDeployed(walletId, agentAddress);
     }

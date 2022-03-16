@@ -48,13 +48,13 @@ describe('Proxy Wallet Interactions', () => {
     describe('validations', () => {
       it('should revert when paused', async () => {
         await contract.connect(admin).pause()
-        await expect(contract.initiateProxyTransaction(hexlify(randomBytes(32)))).to.be.revertedWith('Pausable: paused')
+        await expect(contract.initiateProxyTransaction(hexlify(randomBytes(64)))).to.be.revertedWith('Pausable: paused')
       })
     })
 
     describe('effects', () => {
       it('should emit locator', async () => {
-        const locator = hexlify(randomBytes(32))
+        const locator = hexlify(randomBytes(64))
         await expect(contract.initiateProxyTransaction(locator))
           .to.emit(contract, 'TransactionCreated')
           .withArgs(locator)
@@ -231,9 +231,7 @@ describe('Proxy Wallet Interactions', () => {
 
         const tokenTx = await token.populateTransaction.transfer(otherWallet.address, parseEther('1'))
         // @ts-ignore
-        expect(createUserTransaction(agent, 0, gasLimit, tokenTx)).to.be.rejectedWith(
-          'function call to a non-contract account',
-        )
+        await expect(createUserTransaction(agent, 0, 50000, tokenTx)).to.be.rejectedWith('AGENT_NOT_FOUND')
       })
 
       it('should revert when address is of an agent but not owned by user', async () => {
@@ -254,9 +252,7 @@ describe('Proxy Wallet Interactions', () => {
 
         const tokenTx = await token.populateTransaction.transfer(otherWallet.address, parseEther('1'))
         // @ts-ignore
-        expect(createUserTransaction(agent, 0, gasLimit, tokenTx)).to.be.rejectedWith(
-          'function call to a non-contract account',
-        )
+        await expect(createUserTransaction(agent, 0, 50000, tokenTx)).to.be.rejectedWith('AGENT_NOT_FOUND')
       })
 
       it('should revert when value is greater than agent balance', async () => {
@@ -386,7 +382,7 @@ describe('Proxy Wallet Interactions', () => {
             gasLimit: input.gasLimit,
             gasPrice: await contract.provider.getGasPrice(),
           }),
-        ).to.be.revertedWith('INVALID_SIGNATURE')
+        ).to.be.revertedWith('AGENT_NOT_FOUND')
       })
     })
 
@@ -568,7 +564,7 @@ describe('Proxy Wallet Interactions', () => {
 
         // @ts-ignore
         await expect(createUserTransaction(agent, otherWallet.address, parseEther('1'), 200000)).to.be.rejectedWith(
-          'function call to a non-contract account',
+          'AGENT_NOT_FOUND',
         )
       })
 
@@ -587,7 +583,7 @@ describe('Proxy Wallet Interactions', () => {
 
         // @ts-ignore
         await expect(createUserTransaction(agent, otherWallet.address, parseEther('1'), 200000)).to.be.rejectedWith(
-          'function call to a non-contract account',
+          'AGENT_NOT_FOUND',
         )
       })
 
@@ -678,7 +674,7 @@ describe('Proxy Wallet Interactions', () => {
             gasLimit: input.gasLimit,
             gasPrice: input.gasPrice,
           }),
-        ).to.be.revertedWith('INVALID_SIGNATURE')
+        ).to.be.revertedWith('AGENT_NOT_FOUND')
       })
     })
 
