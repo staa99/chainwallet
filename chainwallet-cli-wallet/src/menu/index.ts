@@ -11,7 +11,8 @@ export class Menu {
     this.title = options.title
     this.parent = options.parent
     this.children = options.children || []
-    this.action = !this.children.length && options.action ? options.action : this.enter.bind(this)
+    this.action =
+      !this.children.length && options.action ? options.action : this.enter.bind(this)
 
     this.isAction = this.children.length === 0
     for (const child of this.children) {
