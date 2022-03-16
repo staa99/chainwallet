@@ -124,6 +124,7 @@ const config: HardhatUserConfig = {
     path: './build/abis',
     clear: false,
     flat: true,
+    runOnCompile: true
   },
   tenderly: {
     project: process.env.TENDERLY_PROJECT,
