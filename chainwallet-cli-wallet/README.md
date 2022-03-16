@@ -7,3 +7,6 @@ users of the protocol including
 - Wallet/Subwallet management
 - Transaction initiation
 - ERC20 support
+
+For an improved experience, duplicate the `.env.example` file and rename
+it to `.env`. Then set the environment variables accordingly.
