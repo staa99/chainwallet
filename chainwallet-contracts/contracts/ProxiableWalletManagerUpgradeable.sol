@@ -25,7 +25,7 @@ abstract contract ProxiableWalletManagerUpgradeable is
      * However, it should only resolve within the network used by the transaction owner.
      * Transactions that cannot be located should be ignored by proxies.
      */
-    event TransactionCreated(bytes32 locator);
+    event TransactionCreated(bytes locator);
 
     /**
      * @dev Emitted when a transaction is completed by a proxy. The transaction hash is used to search the logs for processed transactions.
@@ -119,7 +119,7 @@ abstract contract ProxiableWalletManagerUpgradeable is
      * @dev Initiates a transaction with data at locator. This is agnostic to
      * the network the user is running on.
      */
-    function _initiateProxyTransaction(bytes32 locator) internal {
+    function _initiateProxyTransaction(bytes calldata locator) internal {
         emit TransactionCreated(locator);
     }
 

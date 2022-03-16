@@ -21,3 +21,4 @@ bin/
 
 # Reports
 /reports
+chainwallet-client-js/src/utils/constants.json
