@@ -1,11 +1,42 @@
 import '@nomiclabs/hardhat-ethers'
-import { ethers } from 'hardhat'
+import '@openzeppelin/hardhat-upgrades'
+import { ethers, upgrades } from 'hardhat'
+import {parseEther} from "ethers/lib/utils";
 
 async function main() {
   const factory = await ethers.getContractFactory('ChainWalletMaster')
 
-  // If we had constructor arguments, they would be passed into deploy()
-  const contract = await factory.deploy()
+  /**
+   initialize args:
+   ----------------
+   
+   bytes4 _instanceId,
+   address treasuryAddress,
+   uint256 minStakes,
+   uint256 maxStakes,
+   uint16 minPoolShare
+   */
+  
+  const initializeArgs = [
+    // _instanceId
+    process.env.IARGS_INSTANCE_ID,
+    
+    // treasury address
+    process.env.IARGS_TREASURY_ADDRESS,
+    
+    // minStakes
+    parseEther(process.env.IARGS_MIN_STAKES_ETHERS),
+    
+    // maxStakes
+    parseEther(process.env.IARGS_MAX_STAKES_ETHERS),
+    
+    // minPoolShare
+    Number(process.env.IARGS_MIN_POOL_SHARE),
+  ] 
+  
+  const contract = await upgrades.deployProxy(factory, initializeArgs, {
+    initializer: 'initialize',
+  })
 
   // The address the Contract WILL have once mined
   console.log(contract.address)
